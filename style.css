@@ -1,0 +1,90 @@
+body {
+  height: 100vh;
+}
+
+.app {
+  font-family: Arial, Helvetica, sans-serif;
+  width: 80%;
+  height: 60%;
+  min-width: 1280px;
+  max-width: 1600px;
+  min-height: 720px;
+  max-height: 1200px;
+  /* width: 1920px;
+  height: 1080px; */
+  margin: auto;
+}
+
+.slidecontainer {
+  width: 100%;
+  text-align: center;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 90%;
+  height: 15px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4caf50;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4caf50;
+  cursor: pointer;
+}
+
+#tickspersecond {
+  line-height: 2rem;
+}
+
+.controls {
+  width: 90%;
+  margin: 2em auto;
+  display: flex;
+  flex-direction: row;
+}
+
+.controls > button {
+  height: 2rem;
+  width: 3rem;
+  margin-right: 2em;
+  align-self: flex-end;
+}
+
+.scale-input {
+  display: flex;
+  flex-direction: column;
+  margin-right: 2em;
+  padding: 0;
+  width: 4em;
+}
+
+.scale-input > input,
+select {
+  height: 1.6rem;
+}
+
+.scale-input > label {
+  margin-bottom: 0.5rem;
+}
+
+circle {
+  cursor: pointer;
+}
