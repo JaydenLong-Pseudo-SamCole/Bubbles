@@ -16,6 +16,7 @@ def run_script():
     data = request.get_json()
     # Chosen interval (in minutes)
     chosenInterval = int(data['stockDeltaPTimespan'])
+    topStockData = data['stockData']
 
     # Getting list of all NASDAQ-traded stocks
     url = 'https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqtraded.txt'
@@ -62,7 +63,7 @@ def run_script():
         print("hello")
 
         # Test interval to minus start and end time by for testing to go back to when trading hours were (in seconds)
-        test_interval = 39600
+        test_interval = 53600
         # Set the current time
         current_time = int(time.time()) - test_interval
         print(current_time)
@@ -202,76 +203,66 @@ def run_script():
 
         #time.sleep(0.1)
         return stock_JSON
+    
 
-
-
-    # bubblesUpdate()
-
-    # Names of all stocks
-    stockCount = 0
-    for stock in nasdaq_stocks:
-        # Do no if statement limit for real run, this is just the make is faster for testing
-        #if stockCount < 100:
-        print(stock)
-        print(stockCount)
-        bubblesUpdate(stock)
-        stockCount += 1
-    #bubblesUpdate('APPL')
-
-
-    # with open('bubbles.txt', 'w') as file:
-    #     # Write a string to the file
-    #     file.write(bubbles_JSONString)
-
-    bubbles_JSONString = bubbles_JSONString[:-1]
-
-    # Load the JSON data into a Python object
-    # bubbles_JSON = json.loads(bubbles_JSONString)
-
-    # Sort the Python object by the ABSdelta_p data value in descending order
-    #sorted_obj = sorted(python_bubbleObj, key=lambda x: x['delta_p'], reverse=True)
-
-    sorted_data = sorted(bubbles_JSON, key=lambda x: abs(x["delta_p"]), reverse=True)
-    # sort it by 200 for real test
-    sorted_data = sorted_data[:200]
-    topStockPicks = True
-
-    bubbles_JSON = []
-    bubbles_JSON3 = []
-    bubbles_JSON4 = []
-    dataPointsCount = 0
-    for i in range(1):
+    def JSONToBeSentToApp(stocksSorted):
+        bubbles_JSON = []
+        bubbles_JSON3 = []
+        bubbles_JSON4 = []
         current_time2 = int(time.time())
         bubbles_JSON2 = []
-        for i in range(len(sorted_data)):
-            #bubblesUpdate(sorted_data[i]['symbol'])
-            bubblesUpdate_result = bubblesUpdate(sorted_data[i]['stock'])
+        for i in range(len(stocksSorted)):
+            #bubblesUpdate(stocksSorted[i]['symbol'])
+            bubblesUpdate_result = bubblesUpdate(stocksSorted[i]['stock'])
             if bubblesUpdate_result != False:
                 bubbles_JSON2.append(bubblesUpdate_result)
-                print(bubblesUpdate(sorted_data[i]['stock']))
+                print(bubblesUpdate(stocksSorted[i]['stock']))
                 print("Nani")
                 print(json.dumps(bubbles_JSON2))
         bubbles_JSON3 = {current_time2: bubbles_JSON2}
         bubbles_JSON4.append(bubbles_JSON3)
-        dataPointsCount += 1
-        time.sleep(1)
-    print(json.dumps(bubbles_JSON4))
-        
+        print(json.dumps(bubbles_JSON4))
+        # Open the file in write mode
+        with open('./data/bubbles.json', 'w') as file:
+            # Write a string to the file
+            json.dump(bubbles_JSON4, file)
+        return bubbles_JSON4
 
-    # Open the file in write mode
-    with open('./data/bubbles.json', 'w') as file:
-        # Write a string to the file
-        #json.dump(bubbles_JSON, file)
-        json.dump(bubbles_JSON4, file)
+    if topStockData != "null":
+        topStockData = "[" + (((json.dumps(topStockData)).split("["))[2])[:-3] + "]"
+        print('Ello')
+        print(topStockData)
+        topStockData = json.loads(topStockData)
+        bubbles_JSON4 = JSONToBeSentToApp(topStockData)
+    else:
+        stockCount = 0
+        # Names of all stocks
+        for stock in nasdaq_stocks:
+            # Do no if statement limit for real run, this is just the make is faster for testing
+            if stockCount < 10:
+                print(stock)
+                print(stockCount)
+                bubblesUpdate(stock)
+            stockCount += 1
+        #bubblesUpdate('APPL')
+
+        sorted_data = sorted(bubbles_JSON, key=lambda x: abs(x["delta_p"]), reverse=True)
+        # sort it by 200 for real test
+        sorted_data = sorted_data[:200]
+        topStockPicks = True
+
+        bubbles_JSON4 = JSONToBeSentToApp(sorted_data)
+        
+    return json.dumps(bubbles_JSON4)
+
 
     #print(json.dumps(bubbles_JSON))
 
     #return json.dumps(bubbles_JSON)
-    file = open("./data/visualize_out_20210429_181546.json", "r")
-    contents = file.read()
-    file.close()
+    # file = open("./data/visualize_out_20210429_181546.json", "r")
+    # contents = file.read()
+    # file.close()
     #return json.dumps(bubbles_JSON)
-    return json.dumps(bubbles_JSON4)
 
 
 if __name__ == '__main__':
