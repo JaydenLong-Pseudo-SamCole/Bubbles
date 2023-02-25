@@ -14,7 +14,8 @@
       integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ=="
       crossorigin="anonymous"
     ></script>
-    <title>Swarm Plot</title>
+    <title>Bubbles: Stonks</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
   </head>
   <body>
     <div class="app">
@@ -28,6 +29,20 @@
         <button id="speedDown">-</button>
         <button id="speedUp">+</button>
         <span id="tickspersecond">4 ticks per second</span>
+        <div class="form-select" style="margin-left: 30px; margin-top: auto; margin-bottom: auto;">
+          <select id="stockDeltaPTimespan">
+              <option value="3">3 minutes</option>
+              <option value="5" selected>5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="25">25 minutes</option>
+              <option value="40">40 minutes</option>
+              <option value="60">1 hour</option>
+              <option value="120">2 hours</option>
+              <option value="180">3 hours</option>
+              <option value="240">4 hours</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-success" style="width: auto; margin-left: 30px; margin-top: auto; margin-bottom: auto; padding: 0 12px;" onclick="fetchData()">Get Stonks</button>
       </div>
       <div class="controls">
         <div class="scale-input">
@@ -145,10 +160,16 @@
   // open a json file, or open an API, websocket, or SSE event for streaming data
   async function fetchData() {
     //let data = await fetch("./data/bubbles.json");
-    var xhr = new XMLHttpRequest();
+    var selectElement = document.getElementById("stockDeltaPTimespan");
+    var selectedOption = selectElement.options[selectElement.selectedIndex].value;
+    console.log(selectedOption);
+    let xhr = new XMLHttpRequest();
+    if (xhr.readyState !== 0) {
+      xhr.abort();
+    }
     xhr.open("POST", "http://127.0.0.1:5000/bubbles_script");
     xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send(JSON.stringify({ "stockDeltaPTimespan": 5 }));
+    xhr.send(JSON.stringify({ "stockDeltaPTimespan": selectedOption }));
     xhr.onload = function() {
       let result = this.responseText;
       result = JSON.parse(result);
@@ -175,6 +196,9 @@
 
     tickers = [];
     Object.values(data[0])[0].forEach((d, i) => {
+      console.log(data[0]);
+      console.log(d)
+      console.log(i)
       tickers.push({ stock: d.stock, index: i });
     });
 
@@ -504,5 +528,5 @@
       .text("Volume");
   }
 
-  fetchData();
+  //fetchData();
 </script>
