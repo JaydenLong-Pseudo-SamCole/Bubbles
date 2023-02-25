@@ -42,7 +42,7 @@
               <option value="240">4 hours</option>
           </select>
         </div>
-        <button type="button" class="btn btn-success" style="width: auto; margin-left: 30px; margin-top: auto; margin-bottom: auto; padding: 0 12px;" onclick="fetchData()">Get Stonks</button>
+        <button type="button" class="btn btn-success" style="width: auto; margin-left: 30px; margin-top: auto; margin-bottom: auto; padding: 0 12px;" onclick="fetchData('null')">Get Stonks</button>
       </div>
       <div class="controls">
         <div class="scale-input">
@@ -158,23 +158,39 @@
     .attr("text-anchor", "end");
 
   // open a json file, or open an API, websocket, or SSE event for streaming data
-  async function fetchData() {
-    //let data = await fetch("./data/bubbles.json");
-    var selectElement = document.getElementById("stockDeltaPTimespan");
-    var selectedOption = selectElement.options[selectElement.selectedIndex].value;
-    console.log(selectedOption);
-    let xhr = new XMLHttpRequest();
-    if (xhr.readyState !== 0) {
-      xhr.abort();
-    }
-    xhr.open("POST", "http://127.0.0.1:5000/bubbles_script");
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send(JSON.stringify({ "stockDeltaPTimespan": selectedOption }));
-    xhr.onload = function() {
-      let result = this.responseText;
-      result = JSON.parse(result);
-      init(result);
-    };
+  var fetchDataHasRan = false
+  var hasFetchDataRanAndCompleted = 0;
+  var stockData = "null";
+  async function fetchData(stockData) {
+    return new Promise(function(resolve, reject) {
+      //let data = await fetch("./data/bubbles.json");
+      if (hasFetchDataRanAndCompleted == 1) {
+        location.reload();
+      }
+      hasFetchDataRanAndCompleted = 1;
+      var selectElement = document.getElementById("stockDeltaPTimespan");
+      var selectedOption = selectElement.options[selectElement.selectedIndex].value;
+      console.log(selectedOption);
+      let xhr = new XMLHttpRequest();
+      if (xhr.readyState !== 0) {
+        xhr.abort();
+      }
+      xhr.open("POST", "http://127.0.0.1:5000/bubbles_script");
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.send(JSON.stringify({ "stockDeltaPTimespan": selectedOption, stockData }));
+      xhr.onload = function() {
+        let result = this.responseText;
+        result = JSON.parse(result);
+        hasFetchDataRanAndCompleted = 2;
+        if (fetchDataHasRan == true) {
+          resolve(result);
+        }
+        else {
+          fetchDataHasRan = true;
+          resolve(init(result));
+        }
+      };
+    });
     //return await response;
   }
 
@@ -310,8 +326,19 @@
       animate = true;
       document.querySelector("#play").disabled = true;
 
-      intervalTimer = setInterval(() => {
+      isIntervalRunning = true;
+      intervalTimer = setInterval(async() => {
+        if (!isIntervalRunning) {
+          return;
+        }
+        isIntervalRunning = false
         slider.value = timeIndex;
+        
+        //document.getElementById("autoSetY").click();
+        console.log(frequency);
+        console.log("yo");
+        data = await fetchData(data);
+        console.log("yo2");
 
         if (timeIndex < data.length) {
           updateSim(simulation, data);
@@ -330,10 +357,11 @@
         if (timeIndex < data.length - 1) {
           timeIndex += 1;
         } else {
-          clearInterval(intervalTimer);
-          document.querySelector("#play").disabled = false;
-          animate = false;
+          // clearInterval(intervalTimer);
+          // document.querySelector("#play").disabled = false;
+          // animate = false;
         }
+        isIntervalRunning = true;
       }, frequency);
     });
 
