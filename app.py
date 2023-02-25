@@ -60,8 +60,10 @@ def run_script():
         print(chosenInterval)
         print("hello")
 
+        # Test interval to minus start and end time by for testing to go back to when trading hours were (in seconds)
+        test_interval = 30600
         # Set the current time
-        current_time = int(time.time())
+        current_time = int(time.time()) - test_interval
 
         # Set the start and end times for the historical data request
         start_time = current_time - interval
@@ -84,49 +86,52 @@ def run_script():
             'token': api_key
         }
 
-        # Send the historical data API request and get the response
-        def histResponse():
-            hist_response = requests.get(hist_endpoint, params=hist_params)
-            return hist_response
-        hist_response = histResponse()
 
-        def hist_data_JSONError(hist_response):
+        def hist_data_JSONError():
+            # Send the historical data API request and get the response
+            hist_response = requests.get(hist_endpoint, params=hist_params)
             try:
                 # Parse the response as JSON
                 hist_data = hist_response.json()
                 print('AYUP2')
                 print(hist_data)
+                return hist_data
             except json.JSONDecodeError as e:
                 # Handle any JSON syntax errors
                 print(f"JSON syntax error: {e}")
-                return True
-            return hist_data
-        if hist_data_JSONError(hist_response) == True:
+                return False
+        hist_data = hist_data_JSONError()
+        if hist_data == False:
             return
-        hist_data = hist_data_JSONError(hist_response)
 
-        def noDataOrError(hist_data,hist_response):
+        def noDataOrError(hist_data):
             
+            if hist_data == False:
+                return False
             print('AYO?')
             print(json.dumps(hist_data))
             print('AYUP')
             if 'no_data' in json.dumps(hist_data):
                 print('here3')
                 # Use in real run
-                return True
+                return False
                 # Use in practice
                 #return False
             if 'error' in json.dumps(hist_data):
                 print('here4')
-                time.sleep(5)
-                hist_response = histResponse()
-                hist_data = hist_data_JSONError(hist_response)
-                noDataOrError(hist_data,hist_response)
-            return False
+                time.sleep(20)
+                hist_data = hist_data_JSONError()
+                return noDataOrError(hist_data)
+            print('AYO?6')
+            print(json.dumps(hist_data))
+            print('AYUP6')
+            return hist_data
         print('AYUP3')
-        noDataOrError(hist_data,hist_response)
-        if noDataOrError(hist_data,hist_response) == True or 'no_data' in json.dumps(hist_data):
+        #noDataOrError(hist_data,hist_response)
+        hist_data = noDataOrError(hist_data)
+        if hist_data == False:
             return
+
         print(json.dumps(hist_data))
         print('AYUP4')
 
@@ -150,7 +155,7 @@ def run_script():
 
         # To bubbles format
         stock_JSON = {
-            'symbol': symbol,
+            'stock': symbol,
             'price': current_price,
             'volume': current_volume,
             'delta_p': deltaP,
@@ -191,6 +196,7 @@ def run_script():
     # Names of all stocks
     stockCount = 0
     for stock in nasdaq_stocks:
+        # Do no if statement limit for real run, this is just the make is faster for testing
         if stockCount < 1000:
             print(stock)
             bubblesUpdate(stock)
