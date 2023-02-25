@@ -62,12 +62,12 @@ def run_script():
         print("hello")
 
         # Test interval to minus start and end time by for testing to go back to when trading hours were (in seconds)
-        test_interval = 30600
+        test_interval = 39600
         # Set the current time
         current_time = int(time.time()) - test_interval
         print(current_time)
 
-        start_time = (int(dt.datetime.timestamp(dt.datetime.now() - dt.timedelta(minutes=5))) - test_interval)*1000
+        start_time = (int(dt.datetime.timestamp(dt.datetime.now() - dt.timedelta(minutes=chosenInterval))) - test_interval)*1000
         print(start_time)
         end_time = (int(dt.datetime.timestamp(dt.datetime.now())) - test_interval)*1000
         print(end_time)
@@ -152,7 +152,7 @@ def run_script():
             value = hist_data["results"]
         except KeyError:
             print(f"No Data")
-            return
+            return False
         print(hist_data["results"])
         price_interval_ago = hist_data["results"][0]["c"] #hist_data['c'][0] #10-random_number
         volume_interval_ago = hist_data["results"][0]["v"] #hist_data['v'][0] #10-random_number
@@ -200,7 +200,7 @@ def run_script():
         else:
             bubbles_JSON.append(stock_JSON)
 
-        time.sleep(0.1)
+        #time.sleep(0.1)
         return stock_JSON
 
 
@@ -211,9 +211,10 @@ def run_script():
     stockCount = 0
     for stock in nasdaq_stocks:
         # Do no if statement limit for real run, this is just the make is faster for testing
-        if stockCount < 15:
-            print(stock)
-            bubblesUpdate(stock)
+        #if stockCount < 100:
+        print(stock)
+        print(stockCount)
+        bubblesUpdate(stock)
         stockCount += 1
     #bubblesUpdate('APPL')
 
@@ -232,7 +233,7 @@ def run_script():
 
     sorted_data = sorted(bubbles_JSON, key=lambda x: abs(x["delta_p"]), reverse=True)
     # sort it by 200 for real test
-    sorted_data = sorted_data[:30]
+    sorted_data = sorted_data[:200]
     topStockPicks = True
 
     bubbles_JSON = []
