@@ -24,7 +24,8 @@
         <input type="range" min="0" max="100" value="0" class="slider" id="myRange" />
       </div>
       <div class="controls">
-        <button id="play">Play</button>
+        <button style="width: auto !important;" onclick="replaySession()">Play Back Session</button>
+        <button id="play" style="display: none;">Play</button>
         <button id="stop">Stop</button>
         <button id="speedDown">-</button>
         <button id="speedUp">+</button>
@@ -158,10 +159,14 @@
     .attr("text-anchor", "end");
 
   // open a json file, or open an API, websocket, or SSE event for streaming data
+
+  var replayingSession = false;
+
   var fetchDataHasRan = false
   var hasFetchDataRanAndCompleted = 0;
   var stockData = "null";
   async function fetchData(stockData) {
+    replayingSession = false;
     return new Promise(function(resolve, reject) {
       //let data = await fetch("./data/bubbles.json");
       if (hasFetchDataRanAndCompleted == 1) {
@@ -192,6 +197,24 @@
       };
     });
     //return await response;
+  }
+
+  function replaySession() {
+    replayingSession = true;
+    return new Promise(function(resolve, reject) {
+      let xhr = new XMLHttpRequest();
+      if (xhr.readyState !== 0) {
+        xhr.abort();
+      }
+      xhr.open("POST", "http://127.0.0.1:5000/replaybubblessession");
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.send();
+      xhr.onload = function() {
+        let result = this.responseText;
+        result = JSON.parse(result);
+        resolve(init(result));
+      };
+    });
   }
 
   async function init(data) {
@@ -335,10 +358,9 @@
         slider.value = timeIndex;
         
         //document.getElementById("autoSetY").click();
-        console.log(frequency);
-        console.log("yo");
-        data = await fetchData(data);
-        console.log("yo2");
+        if (replayingSession == false) {
+          data = await fetchData(data);
+        }
 
         if (timeIndex < data.length) {
           updateSim(simulation, data);
@@ -419,6 +441,8 @@
       drawgrid(svg, x, y);
       updateSim(simulation, data);
     });
+
+    document.getElementById("play").click();
   }
 
   function drawTracelines() {
@@ -474,6 +498,8 @@
       .force(
         "y",
         d3.forceY(function (d) {
+          console.log("START");
+          console.log(frequency);
           return y(Object.values(data[timeIndex])[0][d.index]["delta_p"]);
         })
       )
