@@ -21,7 +21,7 @@ def run_script():
     data = request.get_json()
     # Equivalent to about 2 years of stock callback, assuming we will only ever do a maximum of 1 year or so, can be changed
     if (int(data['stockDeltaPTimespan']) > 1000000):
-        return "Oi m8! Trying to overload the server, ey? I'll doxx you."
+        return "Oi m8! Trying to overload the server, ey?"
     def run_bubbles(result_list, currentCPUProcess, maxCPUProcesses):
         # Chosen interval (in minutes)
         chosenInterval = int(data['stockDeltaPTimespan'])
@@ -390,14 +390,11 @@ if __name__ == '__main__':
 
 
 # if __name__ == '__main__':
-#     # Define input arguments for each script instance
 #     script_args_list = [...]
     
-#     # Create a pool of worker processes
 #     num_processes = multiprocessing.cpu_count()
 #     pool = multiprocessing.Pool(num_processes)
     
-#     # Start each script instance as a separate process
 #     results = [pool.apply_async(run_script, args=(script_args,)) for script_args in script_args_list]
     
 #     # Wait for all processes to finish
@@ -407,6 +404,5 @@ if __name__ == '__main__':
 #     # Collect the results from each process
 #     output_list = [result.get() for result in results]
     
-#     # Write the output to a text document
 #     with open('output.txt', 'w') as f:
 #         f.writelines(output_list)
