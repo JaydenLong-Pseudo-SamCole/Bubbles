@@ -21,7 +21,7 @@ def run_script():
     data = request.get_json()
     # Equivalent to about 2 years of stock callback, assuming we will only ever do a maximum of 1 year or so, can be changed
     if (int(data['stockDeltaPTimespan']) > 1000000):
-        return "Oi m8! Trying to overload the server, ey?"
+        return "Oi m8! Trying to overload the server, ey? I'll doxx you."
     def run_bubbles(result_list, currentCPUProcess, maxCPUProcesses):
         # Chosen interval (in minutes)
         chosenInterval = int(data['stockDeltaPTimespan'])
@@ -178,7 +178,8 @@ def run_script():
             #print(hist_data["results"])
             stockTimeIndex = 2
             # Return False if there is no data from the start time to current time within the desired interval OR if the total volume is below 100,000
-            if len(hist_data["results"]) < stockTimeIndex or hist_data["results"][-1]["v"] < 100000:
+            if len(hist_data["results"]) < stockTimeIndex or hist_data["results"][-1]["v"] < 1000:
+            # if len(hist_data["results"]) < stockTimeIndex:
                 return False
             while ((hist_data["results"][-1]["t"])-(hist_data["results"][-stockTimeIndex]["t"])) < (choseIntervalFormated*1000):
                 stockTimeIndex += 1
@@ -279,10 +280,10 @@ def run_script():
             stockCount = 0
             for stock in split_nasdaq_stocks[currentCPUProcess-1]:
                 # Do no if statement limit for real run, this is just the make is faster for testing
-                if stockCount < 40:
-                    print(stock)
-                    print(stockCount)
-                    bubblesUpdate(stock, 0)
+                #if stockCount < 40:
+                print(stock)
+                print(stockCount)
+                bubblesUpdate(stock, 0)
                 stockCount += 1
             #bubblesUpdate('APPL')
 
