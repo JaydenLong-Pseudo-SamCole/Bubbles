@@ -19,18 +19,16 @@
   </head>
   <body>
     <div class="app">
-      <svg></svg>
+      <div id="svgGraphContainerid" style="position: relative;">
+        <div id="sessionNotStartid">START THE SESSION</div>
+        <svg></svg>
+      </div>
       <div class="slidecontainer">
         <input type="range" min="0" max="100" value="0" class="slider" id="myRange" />
       </div>
       <div class="controls">
-        <button style="width: auto !important;" onclick="replaySession()">Play Back Session</button>
-        <button id="play" style="display: none;">Play</button>
-        <button id="stop">Stop</button>
-        <button id="speedDown">-</button>
-        <button id="speedUp">+</button>
-        <span id="tickspersecond">4 ticks per second</span>
-        <div class="form-select" style="margin-left: 30px; margin-top: auto; margin-bottom: auto;">
+        <button type="button" class="btn btn-dark startBubbles" onclick="fetchData('null')">Start</button>
+        <div class="form-select" style="margin-left: 30px; margin: auto 2em auto 0em">
           <select id="stockDeltaPTimespan">
               <option value="3">3 minutes</option>
               <option value="5" selected>5 minutes</option>
@@ -43,7 +41,12 @@
               <option value="240">4 hours</option>
           </select>
         </div>
-        <button type="button" class="btn btn-success" style="width: auto; margin-left: 30px; margin-top: auto; margin-bottom: auto; padding: 0 12px;" onclick="fetchData('null')">Get Stonks</button>
+        <button onclick="replaySession()" type="button" class="btn btn-warning playAndStop">Play Back Session</button>
+        <button id="play" style="display: none;">Play</button>
+        <button id="stop" type="button" class="btn btn-warning playAndStop">Stop</button>
+        <button id="speedDown" type="button" class="btn btn-info tickSpeedAdjust">-</button>
+        <button id="speedUp" type="button" class="btn btn-info tickSpeedAdjust">+</button>
+        <span id="tickspersecond">4 ticks per second</span>
       </div>
       <div class="controls">
         <div class="scale-input">
@@ -54,11 +57,11 @@
           <label>Max Y%:</label>
           <input type="text" id="yMax" name="yMax" />
         </div>
-        <button style="width: 8em" id="setY">Set Y-Axis</button>
-        <button style="width: 8em" id="autoSetY">Auto Set Y</button>
+        <button style="width: 8em" id="setY" type="button" class="btn btn-dark XYAxis">Set Y-Axis</button>
+        <button style="width: 8em" id="autoSetY" type="button" class="btn btn-danger XYAxis">Auto Set Y</button>
       </div>
       <div class="controls">
-        <div class="scale-input" style="width: 6em">
+        <div class="scale-input xAxisScale" style="width: 6em">
           <label>Min X:</label>
           <select name="minX" id="minX" style="width: 8em">
             <option value="1" selected>1</option>
@@ -73,7 +76,7 @@
             <option value="1000000000">1,000,000,000</option>
           </select>
         </div>
-        <div class="scale-input" style="width: 6em">
+        <div class="scale-input xAxisScale" style="width: 6em">
           <label>Max X:</label>
           <select name="maxX" id="maxX" style="width: 8em">
             <option value="1">1</option>
@@ -88,8 +91,9 @@
             <option value="1000000000">1,000,000,000</option>
           </select>
         </div>
-        <button style="width: 8em" id="autoSetX">Auto Set X</button>
+        <button style="width: 8em" id="autoSetX" type="button" class="btn btn-danger XYAxis">Auto Set X</button>
       </div>
+      <div>&nbsp;</div>
     </div>
   </body>
 </html>
@@ -121,6 +125,7 @@
   let tickers = [];
 
   const svg = d3.select("svg").attr("height", height).attr("width", width);
+  let svgContainer = document.getElementById("svgGraphContainerid");
 
   // color gradients for traceline vectors
   const defs = svg.append("defs");
@@ -146,17 +151,13 @@
     .attr("y", 100)
     .attr("font-family", "sans-serif")
     .attr("font-size", 32)
-    .attr("fill", "grey");
+    .attr("fill", "rgb(200,200,200)");
 
-  const tickertext = svg
-    .append("g")
-    .append("text")
-    .attr("x", width - m[1] - m[3])
-    .attr("y", 100)
-    .attr("font-family", "sans-serif")
-    .attr("font-size", 32)
-    .attr("fill", "grey")
-    .attr("text-anchor", "end");
+  let tickertext = document.createElement("div");
+  tickertext.setAttribute("class", "tickerInfo draggable");
+  tickertext.setAttribute("draggable", "true");
+  tickertext.setAttribute("style", "display: none;");
+  svgContainer.prepend(tickertext);
 
   // open a json file, or open an API, websocket, or SSE event for streaming data
 
@@ -167,14 +168,15 @@
   var stockData = "null";
   async function fetchData(stockData) {
     replayingSession = false;
+    startTheSessionFadeOut();
     return new Promise(function(resolve, reject) {
       //let data = await fetch("./data/bubbles.json");
       if (hasFetchDataRanAndCompleted == 1) {
         location.reload();
       }
       hasFetchDataRanAndCompleted = 1;
-      var selectElement = document.getElementById("stockDeltaPTimespan");
-      var selectedOption = selectElement.options[selectElement.selectedIndex].value;
+      let selectElement = document.getElementById("stockDeltaPTimespan");
+      let selectedOption = selectElement.options[selectElement.selectedIndex].value;
       console.log(selectedOption);
       let xhr = new XMLHttpRequest();
       if (xhr.readyState !== 0) {
@@ -201,6 +203,7 @@
 
   function replaySession() {
     replayingSession = true;
+    startTheSessionFadeOut();
     return new Promise(function(resolve, reject) {
       let xhr = new XMLHttpRequest();
       if (xhr.readyState !== 0) {
@@ -247,7 +250,7 @@
       .enter()
       .append("circle")
       .attr("class", "stock")
-      .attr("fill", "lightsteelblue")
+      .attr("fill", "rgba(188,66,245,1)")
       .attr("stroke", "black")
       .attr("stroke-width", 1)
       .attr("r", radius)
@@ -255,12 +258,31 @@
         d3.selectAll(".stock").attr("stroke", "black").attr("stroke-width", 1);
         const circle = d3.select(this);
         activeStock = d3.select(this);
-        circle.attr("stroke", "red").attr("stroke-width", 2);
-        tickertext.text(
-          `${circle.data()[0].stock} ${Object.values(data[timeIndex])[0][circle.data()[0].index].delta_p.toFixed(2)}%`
-        );
+        circle.attr("stroke", "rgba(66,245,197,1)").attr("stroke-width", 2);
+        let deltaP = null;
+        let deltaV = null;
+        if (replayingSession == false) {
+          deltaP = Object.values(data[timeIndex])[0][circle.data()[0].index].delta_p;
+          deltaV = Object.values(data[timeIndex])[0][circle.data()[0].index].delta_v;
+        }
+        else {
+          deltaP = (((Object.values(data[timeIndex])[0][circle.data()[0].index].price)/
+          (Object.values(data[0])[0][circle.data()[0].index].price))*100)-100
+          deltaV = (((Object.values(data[timeIndex])[0][circle.data()[0].index].volume)/
+          (Object.values(data[0])[0][circle.data()[0].index].volume))*100)-100
+        }
+        console.log("at click");
+        let tickerInfoHeadText = "";
+        if (replayingSession == false) {
+          tickerInfoHeadText = "Since Last Move"
+        }
+        else {
+          tickerInfoHeadText = "Since Session Start"
+        }
+        updateTickertextHTML(tickerInfoHeadText, (circle.data()[0].stock), (deltaP.toFixed(2)), (Object.values(data[timeIndex])[0][circle.data()[0].index].price.toFixed(2)), (Object.values(data[timeIndex])[0][circle.data()[0].index].volume.toFixed(2)), (deltaV.toFixed(2)));
         console.log(circle.data()[0]);
         console.log(Object.values(data[timeIndex])[0][circle.data()[0].index].delta_p);
+        tickertext.style.display = "block";
       });
 
     function tick() {
@@ -321,7 +343,7 @@
       svg.attr("height", height);
       y.domain([yMin, yMax]).range([height - m[2], m[0]]);
       x.domain([xMin, xMax]).range([m[3], width - m[1] - m[3]]);
-      tickertext.attr("x", width - m[1] - m[3]);
+      //tickertext.attr("x", width - m[1] - m[3]);
       drawgrid(svg, x, y);
       updateSim(simulation, data);
     });
@@ -332,13 +354,31 @@
       timeIndex = parseInt(this.value);
       updateSim(simulation, data);
       drawTracelines();
-      titletext.text(moment(parseInt(Object.keys(data[timeIndex])[0])).format("YYYY-MM-DD HH:mm:ss:SSS"));
+      //console.log(epochToDateTime(parseInt(Object.keys(data[timeIndex])[0])));
+      titletext.text(epochToDateTime(parseInt(Object.keys(data[timeIndex])[0])));
       if (activeStock) {
-        tickertext.text(
-          `${activeStock.data()[0].stock} ${Object.values(data[timeIndex])[0][
-            activeStock.data()[0].index
-          ].delta_p.toFixed(2)}%`
-        );
+        //tickertext.innerHTML = `${activeStock.data()[0].stock} ${Object.values(data[timeIndex])[0][activeStock.data()[0].index].delta_p.toFixed(2)}%`;
+        let deltaP = null;
+        let deltaV = null;
+        if (replayingSession == false) {
+          deltaP = Object.values(data[timeIndex])[0][activeStock.data()[0].index].delta_p
+          deltaV = Object.values(data[timeIndex])[0][activeStock.data()[0].index].delta_v
+        }
+        else {
+          deltaP = (((Object.values(data[timeIndex])[0][activeStock.data()[0].index].price)/
+          (Object.values(data[0])[0][activeStock.data()[0].index].price))*100)-100
+          deltaV = (((Object.values(data[timeIndex])[0][activeStock.data()[0].index].volume)/
+          (Object.values(data[0])[0][activeStock.data()[0].index].volume))*100)-100
+        }
+        console.log("at AS1");
+        let tickerInfoHeadText = "";
+        if (replayingSession == false) {
+          tickerInfoHeadText = "Since Last Move"
+        }
+        else {
+          tickerInfoHeadText = "Since Session Start"
+        }
+        updateTickertextHTML(tickerInfoHeadText, (activeStock.data()[0].stock), (deltaP.toFixed(2)), (Object.values(data[timeIndex])[0][activeStock.data()[0].index].price.toFixed(2)), (Object.values(data[timeIndex])[0][activeStock.data()[0].index].volume.toFixed(2)), (deltaV.toFixed(2)));
       }
     };
 
@@ -364,13 +404,32 @@
 
         if (timeIndex < data.length) {
           updateSim(simulation, data);
-          titletext.text(moment(parseInt(Object.keys(data[timeIndex])[0])).format("YYYY-MM-DD HH:mm:ss:SSS"));
+          //console.log("hellouuuuuuu " + parseInt(Object.keys(data[timeIndex])[0]))
+          //console.log(epochToDateTime(parseInt(Object.keys(data[timeIndex])[0])));
+          titletext.text(epochToDateTime(parseInt(Object.keys(data[timeIndex])[0])));
           if (activeStock) {
-            tickertext.text(
-              `${activeStock.data()[0].stock} ${Object.values(data[timeIndex])[0][
-                activeStock.data()[0].index
-              ].delta_p.toFixed(2)}%`
-            );
+            //tickertext.innerHTML = `${activeStock.data()[0].stock} ${Object.values(data[timeIndex])[0][activeStock.data()[0].index].delta_p.toFixed(2)}%`;
+            let deltaP = null;
+            let deltaV = null;
+            if (replayingSession == false) {
+              deltaP = Object.values(data[timeIndex])[0][activeStock.data()[0].index].delta_p
+              deltaV = Object.values(data[timeIndex])[0][activeStock.data()[0].index].delta_v
+            }
+            else {
+              deltaP = (((Object.values(data[timeIndex])[0][activeStock.data()[0].index].price)/
+              (Object.values(data[0])[0][activeStock.data()[0].index].price))*100)-100
+              deltaV = (((Object.values(data[timeIndex])[0][activeStock.data()[0].index].volume)/
+              (Object.values(data[0])[0][activeStock.data()[0].index].volume))*100)-100
+            }
+            console.log("at AS2");
+            let tickerInfoHeadText = "";
+            if (replayingSession == false) {
+              tickerInfoHeadText = "Since Last Move"
+            }
+            else {
+              tickerInfoHeadText = "Since Session Start"
+            }
+            updateTickertextHTML(tickerInfoHeadText, (activeStock.data()[0].stock), (deltaP.toFixed(2)), (Object.values(data[timeIndex])[0][activeStock.data()[0].index].price.toFixed(2)), (Object.values(data[timeIndex])[0][activeStock.data()[0].index].volume.toFixed(2)), (deltaV.toFixed(2)));
           }
         }
 
@@ -379,9 +438,11 @@
         if (timeIndex < data.length - 1) {
           timeIndex += 1;
         } else {
-          // clearInterval(intervalTimer);
-          // document.querySelector("#play").disabled = false;
-          // animate = false;
+          if (replayingSession == true) {
+            clearInterval(intervalTimer);
+            document.querySelector("#play").disabled = false;
+            animate = false;
+          }
         }
         isIntervalRunning = true;
       }, frequency);
@@ -498,8 +559,8 @@
       .force(
         "y",
         d3.forceY(function (d) {
-          console.log("START");
-          console.log(frequency);
+          //console.log("START");
+          //console.log(frequency);
           return y(Object.values(data[timeIndex])[0][d.index]["delta_p"]);
         })
       )
@@ -532,7 +593,8 @@
       .attr("x2", width - 100)
       .attr("y1", y(0))
       .attr("y2", y(0))
-      .attr("stroke", "rgba(0,0,0,0.2")
+      //.attr("stroke", "rgba(255,255,255,0.2")
+      .attr("stroke", "rgba(255,255,255,1.0")
       .attr("stroke-dasharray", "12 4")
       .attr("stroke-width", "2");
 
@@ -543,13 +605,14 @@
           .attr("x2", width - 100)
           .attr("y1", y(tick))
           .attr("y2", y(tick))
-          .attr("stroke", "rgba(0,0,0,0.15")
+          //.attr("stroke", "rgba(255,255,255,0.15")
+          .attr("stroke", "rgba(255,255,255,0.75")
           .attr("stroke-width", "1");
       }
       g.append("text") // left labels
         .attr("x", 80)
         .attr("y", y(tick))
-        .attr("fill", "black")
+        .attr("fill", "white")
         .attr("alignment-baseline", "middle")
         .attr("text-anchor", "end")
         .text(tick + "%");
@@ -564,22 +627,91 @@
         .attr("x2", x(tick))
         .attr("y1", y.range()[0])
         .attr("y2", y.range()[1])
-        .attr("stroke", "rgba(0,0,0,0.15")
+        // .attr("stroke", "rgba(0,0,0,0.15")
+        .attr("stroke", "rgba(255,255,255,0.75")
         .attr("stroke-width", "1");
       g.append("text")
         .attr("x", x(tick))
         .attr("y", y.range()[0] + 30)
-        .attr("fill", "black")
+        .attr("fill", "white")
         .attr("text-anchor", "middle")
         .text(tick.toLocaleString("en-US"));
     });
 
     g.append("text")
       .attr("x", width / 2)
-      .attr("y", y.range()[0] + 60)
-      .attr("fill", "black")
+      .attr("y", y.range()[0] + 55)
+      .attr("fill", "white")
       .attr("text-anchor", "middle")
+      .attr("class", "axisTitles")
       .text("Volume");
+  }
+
+  function epochToDateTime(epoch) {
+    let dateObj = new Date(epoch * 1000);
+    let year = dateObj.getFullYear();
+    let month = dateObj.toLocaleString('default', { month: 'long' });
+    let day = dateObj.toLocaleString('default', { weekday: 'long' });
+    let hours = ("0" + dateObj.getHours()).slice(-2);
+    let minutes = ("0" + dateObj.getMinutes()).slice(-2);
+    let seconds = ("0" + dateObj.getSeconds()).slice(-2);
+    let AMOrPM = dateObj.toLocaleString('default', { hour12: true, hour: 'numeric' }).slice(-2);
+    let dateTime = year + " " + month + " " + day + " " + hours + ":" + minutes + ":" + seconds + " " + AMOrPM;
+    return dateTime;
+  }
+  
+  const draggable = document.querySelector('.draggable');
+  let initialX, initialY, currentX, currentY;
+  let xOffset = 0, yOffset = 0;
+  let active = false;
+
+  draggable.addEventListener('mousedown', dragStart);
+  draggable.addEventListener('mouseup', dragEnd);
+  document.addEventListener('mousemove', drag);
+
+  function dragStart(event) {
+    initialX = event.clientX - xOffset;
+    initialY = event.clientY - yOffset;
+
+    if (event.target === draggable) {
+      active = true;
+    }
+  }
+
+  function dragEnd() {
+    initialX = currentX;
+    initialY = currentY;
+    active = false;
+  }
+
+  function drag(event) {
+    if (active) {
+      event.preventDefault();
+      currentX = event.clientX - initialX;
+      currentY = event.clientY - initialY;
+      xOffset = currentX;
+      yOffset = currentY;
+      setTranslate(currentX, currentY, draggable);
+    }
+  }
+
+  function setTranslate(xPos, yPos, el) {
+    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+  }
+
+  function startTheSessionFadeOut() {
+    document.getElementById('sessionNotStartid').style.opacity = "0";
+    document.getElementById('sessionNotStartid').style.transition = "opacity 0.8s ease-out";
+  }
+
+  function updateTickertextHTML(tickerHeadTitle, stockName, stockDeltaP, stockPrice, stockVolume, stockDeltaV) {
+    tickertext.innerHTML = `<div class="tickerInfoHead">${tickerHeadTitle}</div>`;
+    tickertext.innerHTML += `${stockName} ${stockDeltaP}%`;
+    tickertext.innerHTML += `<br>Current Value: $${stockPrice}`;
+    tickertext.innerHTML += `<br>Volume: ${stockVolume}`;
+    tickertext.innerHTML += `<br>Avg. Volume Change: ${stockDeltaV}`;
+    tickertext.innerHTML += `<br><button type="button" class="btn btn-dark buySellStockInTickerInfo buyStockInTickerInfo">Buy ${stockName}</button>`;
+    tickertext.innerHTML += `<button type="button" class="btn btn-dark buySellStockInTickerInfo sellStockInTickerInfo">Sell ${stockName}</button>`;
   }
 
   //fetchData();
