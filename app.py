@@ -19,12 +19,13 @@ CORS(app)
 def run_script():
 
     data = request.get_json()
-    # Equivalent to about 2 years of stock callback, assuming we will only ever do a maximum of 1 year or so, can be changed
+    # Equivalent to about 2 years of stock callback, assuming we will only ever do a maximum of 1 year or so, meaning the user tried to change the HTML in the inspector
     if (int(data['stockDeltaPTimespan']) > 1000000):
-        return "Oi m8! Trying to overload the server, ey? I'll doxx you."
+        return "Oi m8! Trying to overload the server, ey?"
     def run_bubbles(result_list, currentCPUProcess, maxCPUProcesses):
         # Chosen interval (in minutes)
         chosenInterval = int(data['stockDeltaPTimespan'])
+        # The top 200 stocks, will be null if the user just started the session because it hasn't sorted through 5,000+ stocks yet
         topStockData = data['stockData']
         print(chosenInterval)
         print(topStockData)
@@ -64,6 +65,7 @@ def run_script():
         bubbles_JSON2 = []
         bubbles_JSONString = ""
 
+        # Get the stock quotes and update them continously
         def bubblesUpdate(stock, countOfStockTries):
             # Stock symbol
             symbol = stock
@@ -84,8 +86,11 @@ def run_script():
             # end_time = (int(dt.datetime.timestamp(dt.datetime.now())) - test_interval)*1000
             end_time = 1678212349000-(countOfStockTries*10*1000)
             #print(end_time)
+            
+            # Timestamp to start getting stock quotes, current time minus the interval(minutes ago) the user selected
             start_timestamp_data = dt.datetime.fromtimestamp(current_time-choseIntervalFormated)
             start_formatted_date = start_timestamp_data.strftime('%Y-%m-%d')
+            # Timestamp of current stock quote in the current time, to calculate the difference in P/V from the first timestamp data point, to the newest data point 
             end_timestamp_data = dt.datetime.fromtimestamp(current_time)
             end_formatted_date = end_timestamp_data.strftime('%Y-%m-%d')
             # API URL for historical data
@@ -112,6 +117,7 @@ def run_script():
                 'token': api_key
             }
 
+            # Check if any errors occur while retrieving a quote, if not, put the response in "hist_data"
             def hist_data_JSONError():
                 # Send the historical data API request and get the response
                 #hist_response = requests.get(hist_endpoint, params=hist_params)
@@ -165,6 +171,8 @@ def run_script():
                 
             # Get the price and volume from 5 minutes ago
             #random_number = random.randint(1, 8)
+            
+            # Get a specific index of the returned response, but if this index is not there, it means the stock has no data (meaning it's not a stock that's traded, and thus NasDaq doesn't update it)
             try:
                 value = hist_data["results"]
                 countOfStockTries = 0
@@ -181,6 +189,7 @@ def run_script():
             if len(hist_data["results"]) < stockTimeIndex or hist_data["results"][-1]["v"] < 1000:
             # if len(hist_data["results"]) < stockTimeIndex:
                 return False
+            # Since the quote can return a varying number of candles depending on the stock (it can return three candles in a five minute-interval, or six, or just two, etc..). This code gets the last stock quote and keeps searching the index from end-to-start until it finds another quote with a timestamp equal to, or greater than, the interval the user selected
             while ((hist_data["results"][-1]["t"])-(hist_data["results"][-stockTimeIndex]["t"])) < (choseIntervalFormated*1000):
                 stockTimeIndex += 1
                 if len(hist_data["results"]) < stockTimeIndex:
@@ -239,7 +248,7 @@ def run_script():
             #time.sleep(0.1)
             return stock_JSON
         
-
+        # Compile all the stocks itgot from each iteration of the bubblesUpdate loop into a singular JSON
         def JSONToBeSentToApp(stocksSorted):
             bubbles_JSON = []
             bubbles_JSON3 = []
@@ -267,17 +276,20 @@ def run_script():
             #     json.dump(bubbles_JSON4, file)
             return bubbles_JSON2
 
+        # if the top 200 stocks have already been selected, only search and update those in the bubblesUpdate function, else, scan through all 5,000+ stocks and find the top 200 absolute value performers 
         if topStockData != "null":
             topStockData = "[" + (((json.dumps(topStockData)).split("["))[2])[:-3] + "]"
             topStockData = json.loads(topStockData)
             np_topStockData = np.array(topStockData)
             split_topStockData = np.array_split(np_topStockData, maxCPUProcesses)
+            # Loop through each of the top 200 stocks, but only for a certain segment of the list (determined by which CPU thread we're on, e.g. if we're on the 4th CPU thread out of 8, it would choose a array of stocks somewhere in the middle of the stock list on the top 200 list)
             bubbles_JSON4 = JSONToBeSentToApp(split_topStockData[currentCPUProcess-1])
         else:
             # Names of all stocks
             np_nasdaq_stocks = np.array(nasdaq_stocks)
             split_nasdaq_stocks = np.array_split(np_nasdaq_stocks, maxCPUProcesses)
             stockCount = 0
+            # Loop through each stocks to get its quotes, but only for a certain segment of the total number of stocks on the NasDaq (determined by which CPU thread we're on, e.g. if we're on the 4th CPU thread out of 8, it would choose a array of stocks somewhere in the middle of the stock list on the NasDaq)
             for stock in split_nasdaq_stocks[currentCPUProcess-1]:
                 # Do no if statement limit for real run, this is just the make is faster for testing
                 #if stockCount < 40:
@@ -287,8 +299,9 @@ def run_script():
                 stockCount += 1
             #bubblesUpdate('APPL')
 
+            # Sort the stocks by absolute P value
             sorted_data = sorted(bubbles_JSON, key=lambda x: abs(x["delta_p"]), reverse=True)
-            # sort it by 200 for real test
+            # Only take the top 200
             sorted_data = sorted_data[:(math.floor(200*(1/maxCPUProcesses)))]
             topStockPicks = True
 
@@ -311,6 +324,8 @@ def run_script():
     # print(script_args_list)
     # # Start each script instance as a separate process
     # results = [pool.apply_async(run_bubbles, args=(script_args,num_processes)) for script_args in script_args_list]
+
+    # START, up until "END," the entire section pretty much determines the number of CPU threads available, and runs the part of the script we want on each of those threads, and then compiles all of them together once they've finished, and then sorts them in alphabetical order(so when app.py is run again everytime the Bubbles stocks updates, it will always get back the same list order, which is alphabetical order, so it knows which circle is which stock in the index. It's not sorted by P value because we already have the top 200 stocks based on absolute P value, so sorting by P value wouldn't change anything, and would make it worse as the stocks' positions in the index would change whenever their P values increase or decrease).
     num_instances = multiprocessing.cpu_count()
     result_list = []
     threads = []
@@ -339,6 +354,7 @@ def run_script():
     print('Wuddap')
     #response2 = response2.replace('\\', '')
     print(json.dumps(responseCompiledJSON))
+    # REPLACE (rewrite) the current data in the bubbles JSON with the new update of the stocks
     with open('./data/bubbles.json', 'w') as file:
         # Write a string to the file
         file.write(json.dumps(responseCompiledJSON))
@@ -355,10 +371,12 @@ def run_script():
     bubblesReplaySession = json.loads(bubblesReplaySession)
     print(json.dumps(bubblesReplaySession))
     bubblesReplaySession.append(responseCompiled)
+    # ADD the data to the replay session JSON
     with open('./data/bubblesReplaySession.json', 'w') as file:
         file.write(json.dumps(bubblesReplaySession))
 
     return json.dumps(responseCompiledJSON)
+    # END
     
     # # Wait for all processes to finish
     # pool.close()
@@ -380,6 +398,7 @@ def run_script():
     # file.close()
     #return json.dumps(bubbles_JSON)
 
+# If the user clicks the button to replay the session, if will just send back the JSON(JSON2) file location of all the Bubbles stock updates that the script has been adding to everytime it updated the stocks
 @app.route('/replaybubblessession', methods=['POST'])
 def replayingBubblesSession():
     with open('./data/bubblesReplaySession.json', 'r') as file:
