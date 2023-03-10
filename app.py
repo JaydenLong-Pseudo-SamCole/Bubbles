@@ -408,21 +408,3 @@ def replayingBubblesSession():
 if __name__ == '__main__':
     app.run()
 
-
-# if __name__ == '__main__':
-#     script_args_list = [...]
-    
-#     num_processes = multiprocessing.cpu_count()
-#     pool = multiprocessing.Pool(num_processes)
-    
-#     results = [pool.apply_async(run_script, args=(script_args,)) for script_args in script_args_list]
-    
-#     # Wait for all processes to finish
-#     pool.close()
-#     pool.join()
-    
-#     # Collect the results from each process
-#     output_list = [result.get() for result in results]
-    
-#     with open('output.txt', 'w') as f:
-#         f.writelines(output_list)
